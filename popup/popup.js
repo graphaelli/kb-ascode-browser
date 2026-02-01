@@ -71,7 +71,7 @@ async function getSavedObjectInfo() {
       showState('notDetected');
     }
   } catch (error) {
-    console.error('Error getting saved object info:', error);
+    // console.error('Error getting saved object info:', error);
     showState('notDetected');
   }
 }
