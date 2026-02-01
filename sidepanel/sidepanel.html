@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kibana as Code - Resources</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Kibana as Code</h1>
+      <p class="subtitle">Exportable Resources</p>
+    </header>
+
+    <main>
+      <!-- Loading state -->
+      <div id="loading" class="state">
+        <div class="spinner"></div>
+        <p>Scanning page for resources...</p>
+      </div>
+
+      <!-- No resources found -->
+      <div id="no-resources" class="state hidden">
+        <div class="icon">⚠️</div>
+        <p>No exportable resources found on this page.</p>
+      </div>
+
+      <!-- Resources list -->
+      <div id="resources-container" class="hidden">
+        <div class="resources-header">
+          <span id="resource-count">0 resources</span>
+          <button id="refresh-btn" class="btn-icon" title="Refresh">🔄</button>
+        </div>
+        <ul id="resources-list" class="resources-list">
+          <!-- Resources will be populated here -->
+        </ul>
+      </div>
+    </main>
+  </div>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

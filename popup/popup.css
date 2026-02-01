@@ -140,6 +140,32 @@ header h1 {
   background: #003a66;
 }
 
+.explore-button {
+  width: 100%;
+  padding: 10px 16px;
+  background: #f5f7fa;
+  color: #343741;
+  border: 1px solid #d3dae6;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  transition: background 0.2s;
+}
+
+.explore-button:hover {
+  background: #e9edf3;
+}
+
+.explore-button.hidden {
+  display: none;
+}
+
 .retry-button {
   margin-top: 12px;
   padding: 8px 16px;

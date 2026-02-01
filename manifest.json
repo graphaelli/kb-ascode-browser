@@ -6,12 +6,17 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "downloads"
+    "downloads",
+    "sidePanel",
+    "storage"
   ],
   "action": {
     "default_popup": "popup/popup.html"
   },
   "background": {
     "service_worker": "background/background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
   }
 }

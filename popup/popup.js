@@ -19,6 +19,7 @@ const elements = {
   objectType: document.getElementById('object-type'),
   objectId: document.getElementById('object-id'),
   exportBtn: document.getElementById('export-btn'),
+  exploreBtn: document.getElementById('explore-btn'),
   retryBtn: document.getElementById('retry-btn'),
   successFilename: document.getElementById('success-filename'),
   errorMessage: document.getElementById('error-message'),
@@ -66,6 +67,14 @@ async function getSavedObjectInfo() {
     if (response && response.isKibanaPage && response.savedObject) {
       currentSavedObject = response.savedObject;
       displaySavedObject(response.savedObject);
+      
+      // Show explore button if there are multiple resources
+      if (response.hasMultipleResources) {
+        elements.exploreBtn.classList.remove('hidden');
+      } else {
+        elements.exploreBtn.classList.add('hidden');
+      }
+      
       showState('detected');
     } else {
       showState('notDetected');
@@ -125,8 +134,23 @@ function retryExport() {
   showState('detected');
 }
 
+/**
+ * Open side panel to explore all resources
+ */
+async function openSidePanel() {
+  try {
+    // Open the side panel for the current tab
+    await chrome.sidePanel.open({ tabId: currentTabId });
+    // Close the popup
+    window.close();
+  } catch (error) {
+    console.error('[Kibana as Code] Error opening side panel:', error);
+  }
+}
+
 // Event listeners
 elements.exportBtn.addEventListener('click', exportSavedObject);
+elements.exploreBtn.addEventListener('click', openSidePanel);
 elements.retryBtn.addEventListener('click', retryExport);
 
 // Initialize popup
