@@ -710,14 +710,6 @@ async function getEmbeddedPanelsFromAPI(dashboardId) {
 }
 
 /**
- * Check if there are multiple exportable resources on the page
- */
-async function hasMultipleResources() {
-  const resources = await getAllResources();
-  return resources.length > 1;
-}
-
-/**
  * Listen for messages from the popup or background script
  */
 // Store for highlighted element
@@ -844,13 +836,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const savedObject = detectSavedObject();
       const baseUrl = getKibanaBaseUrl();
       
-      // Check for multiple resources (async)
-      let multipleResources = false;
+      // Get resource count for dashboard pages (async)
+      let additionalResourceCount = 0;
       if (savedObject && window.location.href.includes('/app/dashboards')) {
         try {
-          multipleResources = await hasMultipleResources();
+          const resources = await getAllResources();
+          // Additional resources = total - 1 (the main dashboard)
+          additionalResourceCount = Math.max(0, resources.length - 1);
         } catch (e) {
-          console.error('[Kibana as Code] Error checking for multiple resources:', e);
+          console.error('[Kibana as Code] Error getting resource count:', e);
         }
       }
       
@@ -858,7 +852,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         savedObject,
         baseUrl,
         isKibanaPage: savedObject !== null,
-        hasMultipleResources: multipleResources,
+        additionalResourceCount,
       });
     })();
     return true;

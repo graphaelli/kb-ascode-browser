@@ -24,6 +24,11 @@
         <div class="icon">⚠️</div>
         <p>No exportable resource detected on this page.</p>
         <p class="hint">Navigate to a Kibana dashboard, visualization, lens, saved search, or other resource page.</p>
+        
+        <button id="nd-explore-btn" class="explore-button">
+          <span class="btn-icon">📋</span>
+          <span class="btn-text">Open Side Panel</span>
+        </button>
       </div>
 
       <!-- Resource detected but not exportable -->
@@ -40,6 +45,11 @@
           </div>
         </div>
         <p id="ne-reason" class="hint"></p>
+        
+        <button id="ne-explore-btn" class="explore-button">
+          <span class="btn-icon">📋</span>
+          <span class="btn-text">Open Side Panel</span>
+        </button>
       </div>
 
       <!-- Saved object detected -->
@@ -66,7 +76,7 @@
         
         <button id="explore-btn" class="explore-button hidden">
           <span class="btn-icon">📋</span>
-          Explore Resources
+          <span class="btn-text">Open Side Panel</span>
         </button>
       </div>
 

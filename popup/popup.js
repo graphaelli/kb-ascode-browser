@@ -27,6 +27,8 @@ const elements = {
   neObjectTitle: document.getElementById('ne-object-title'),
   neObjectType: document.getElementById('ne-object-type'),
   neReason: document.getElementById('ne-reason'),
+  neExploreBtn: document.getElementById('ne-explore-btn'),
+  ndExploreBtn: document.getElementById('nd-explore-btn'),
 };
 
 /**
@@ -82,12 +84,11 @@ async function getSavedObjectInfo() {
       
       displaySavedObject(response.savedObject);
       
-      // Show explore button if there are multiple resources
-      if (response.hasMultipleResources) {
-        elements.exploreBtn.classList.remove('hidden');
-      } else {
-        elements.exploreBtn.classList.add('hidden');
-      }
+      // Always show the explore button on Kibana pages
+      elements.exploreBtn.classList.remove('hidden');
+      
+      // Update button text based on additional resource count
+      updateExploreBtnText(elements.exploreBtn, response.additionalResourceCount || 0);
       
       showState('detected');
     } else {
@@ -106,6 +107,18 @@ function displaySavedObject(savedObject) {
   elements.objectTitle.textContent = savedObject.title || 'Untitled';
   elements.objectType.textContent = savedObject.type;
   elements.objectId.textContent = savedObject.id;
+}
+
+/**
+ * Update explore button text based on additional resource count
+ */
+function updateExploreBtnText(button, count) {
+  const textSpan = button.querySelector('.btn-text');
+  if (count > 0) {
+    textSpan.textContent = `Explore ${count} more in Side Panel`;
+  } else {
+    textSpan.textContent = 'Open Side Panel';
+  }
 }
 
 /**
@@ -166,6 +179,8 @@ async function openSidePanel() {
 // Event listeners
 elements.exportBtn.addEventListener('click', exportSavedObject);
 elements.exploreBtn.addEventListener('click', openSidePanel);
+elements.neExploreBtn.addEventListener('click', openSidePanel);
+elements.ndExploreBtn.addEventListener('click', openSidePanel);
 elements.retryBtn.addEventListener('click', retryExport);
 
 // Initialize popup
