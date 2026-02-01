@@ -194,6 +194,25 @@ header h1 {
   background: #7c3aed;
 }
 
+.resource-type.alt-api {
+  background: #0d9488;
+}
+
+.resource-type.not-exportable {
+  background: #98a2b3;
+}
+
+.resource-item.not-exportable {
+  opacity: 0.7;
+}
+
+.not-exportable-reason {
+  font-size: 11px;
+  color: #98a2b3;
+  margin-top: 4px;
+  font-style: italic;
+}
+
 .resource-id {
   font-family: 'SF Mono', Monaco, Consolas, monospace;
   font-size: 11px;

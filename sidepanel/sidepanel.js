@@ -37,15 +37,26 @@ function showState(state) {
 function renderResourceItem(resource, index) {
   const isPrimary = index === 0;
   const isEmbedded = resource.isEmbedded;
-  const canExport = resource.id || isEmbedded; // Can export if has ID or is embedded (we can synthesize)
+  const isNotExportable = resource.notExportable;
+  const usesAltApi = resource.useAlternativeApi;
+  const canExport = !isNotExportable && (resource.id || isEmbedded || usesAltApi); // Can export if has ID, is embedded, or uses alt API
   
   const li = document.createElement('li');
-  li.className = `resource-item${isPrimary ? ' primary' : ''}`;
+  li.className = `resource-item${isPrimary ? ' primary' : ''}${isNotExportable ? ' not-exportable' : ''}`;
   li.dataset.index = index;
   
   let typeLabel = resource.type;
   if (isEmbedded) {
     typeLabel += ' (embedded)';
+  } else if (usesAltApi) {
+    typeLabel += ' (json)';
+  }
+  
+  let disabledReason = '';
+  if (isNotExportable) {
+    disabledReason = resource.notExportableReason || 'This resource type cannot be exported';
+  } else if (!canExport) {
+    disabledReason = 'Cannot export this resource';
   }
   
   li.innerHTML = `
@@ -54,13 +65,14 @@ function renderResourceItem(resource, index) {
         <div class="resource-info">
           <div class="resource-title">${escapeHtml(resource.title || 'Untitled')}</div>
           <div class="resource-meta">
-            <span class="resource-type${isEmbedded ? ' embedded' : ''}">${escapeHtml(typeLabel)}</span>
+            <span class="resource-type${isEmbedded ? ' embedded' : ''}${usesAltApi ? ' alt-api' : ''}${isNotExportable ? ' not-exportable' : ''}">${escapeHtml(typeLabel)}</span>
             ${resource.id ? `<span class="resource-id" title="${escapeHtml(resource.id)}">${escapeHtml(resource.id)}</span>` : ''}
           </div>
+          ${isNotExportable ? `<div class="not-exportable-reason">${escapeHtml(disabledReason)}</div>` : ''}
         </div>
-        <button class="download-btn" data-index="${index}" ${!canExport ? 'disabled title="Cannot export this resource"' : ''}>
-          <span class="btn-icon-inner">⬇️</span>
-          <span class="btn-text">Export</span>
+        <button class="download-btn" data-index="${index}" ${!canExport ? `disabled title="${escapeHtml(disabledReason)}"` : ''}>
+          <span class="btn-icon-inner">${isNotExportable ? '🚫' : '⬇️'}</span>
+          <span class="btn-text">${isNotExportable ? 'N/A' : 'Export'}</span>
         </button>
       </div>
     </div>
@@ -94,7 +106,7 @@ function renderResources(resources) {
     resourcesList.appendChild(item);
   });
   
-  const exportableCount = resources.filter(r => r.id || r.isEmbedded).length;
+  const exportableCount = resources.filter(r => !r.notExportable && (r.id || r.isEmbedded || r.useAlternativeApi)).length;
   resourceCount.textContent = `${resources.length} resource${resources.length !== 1 ? 's' : ''} (${exportableCount} exportable)`;
   
   showState('resources');
@@ -111,7 +123,7 @@ async function handleDownload(index, button) {
   }
   
   const resource = panelResources[index];
-  const canExport = resource.id || resource.isEmbedded;
+  const canExport = !resource.notExportable && (resource.id || resource.isEmbedded || resource.useAlternativeApi);
   if (!canExport) {
     return;
   }
@@ -138,6 +150,7 @@ async function handleDownload(index, button) {
       panelIndex: resource.panelIndex,
       dashboardId: resource.dashboardId,
       isEmbedded: resource.isEmbedded,
+      useAlternativeApi: resource.useAlternativeApi || false,
     });
     
     if (response.success) {

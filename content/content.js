@@ -31,6 +31,27 @@ const KIBANA_PATTERNS = {
 };
 
 /**
+ * Types that require alternative APIs (not the saved objects export API)
+ */
+const ALTERNATIVE_API_TYPES = {
+  slo: {
+    apiPath: (id) => `/api/observability/slos/${id}`,
+    fileExtension: 'json',
+  },
+  alert: {
+    apiPath: (id) => `/api/alerting/rule/${id}`,
+    fileExtension: 'json',
+  },
+};
+
+/**
+ * Types that are not exportable via any known API
+ */
+const NON_EXPORTABLE_TYPES = {
+  cases: 'Cases are not exportable via any known API',
+};
+
+/**
  * Export a saved object using the Kibana API (called from content script context)
  */
 async function exportSavedObject(type, id) {
@@ -58,6 +79,39 @@ async function exportSavedObject(type, id) {
   }
 
   return await response.text();
+}
+
+/**
+ * Export a resource using an alternative API (for types not supported by saved objects export)
+ */
+async function exportViaAlternativeApi(type, id) {
+  const apiConfig = ALTERNATIVE_API_TYPES[type];
+  if (!apiConfig) {
+    throw new Error(`No alternative API configured for type: ${type}`);
+  }
+  
+  const baseUrl = getKibanaBaseUrl();
+  const apiPath = apiConfig.apiPath(id);
+  const url = `${baseUrl}${apiPath}`;
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'kbn-xsrf': 'true',
+    },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Export failed: ${response.status} ${response.statusText} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  
+  // Return as formatted JSON (pretty printed for readability)
+  return JSON.stringify(data, null, 2);
 }
 
 /**
@@ -299,12 +353,25 @@ function detectSavedObject() {
   for (const [type, pattern] of Object.entries(KIBANA_PATTERNS)) {
     const match = url.match(pattern);
     if (match && match[1]) {
-      return {
+      const result = {
         type,
         id: match[1],
         title: extractTitle(),
         url: url,
       };
+      
+      // Check if this type uses an alternative API
+      if (ALTERNATIVE_API_TYPES[type]) {
+        result.useAlternativeApi = true;
+      }
+      
+      // Check if this type is non-exportable
+      if (NON_EXPORTABLE_TYPES[type]) {
+        result.notExportable = true;
+        result.notExportableReason = NON_EXPORTABLE_TYPES[type];
+      }
+      
+      return result;
     }
   }
   
@@ -811,15 +878,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   
   if (request.action === 'exportSavedObject') {
-    const { type, id, title, panelIndex, dashboardId, isEmbedded } = request;
+    const { type, id, title, panelIndex, dashboardId, isEmbedded, useAlternativeApi } = request;
     
     (async () => {
       try {
         let content;
+        let fileExtension = 'ndjson'; // Default for saved objects
         
         if (isEmbedded && dashboardId && panelIndex) {
           // Export embedded panel (construct synthetic saved object)
           content = await exportEmbeddedPanel(dashboardId, panelIndex);
+        } else if (useAlternativeApi && ALTERNATIVE_API_TYPES[type]) {
+          // Export using alternative API (SLOs, alerting rules, etc.)
+          content = await exportViaAlternativeApi(type, id);
+          fileExtension = ALTERNATIVE_API_TYPES[type].fileExtension || 'json';
         } else if (id) {
           // Export regular saved object via API
           content = await exportSavedObject(type, id);
@@ -833,6 +905,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           content,
           title,
           type,
+          fileExtension,
         });
         
         sendResponse(downloadResponse);

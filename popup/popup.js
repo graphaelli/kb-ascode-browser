@@ -8,6 +8,7 @@ let currentTabId = null;
 const states = {
   loading: document.getElementById('loading'),
   notDetected: document.getElementById('not-detected'),
+  notExportable: document.getElementById('not-exportable'),
   detected: document.getElementById('detected'),
   exporting: document.getElementById('exporting'),
   success: document.getElementById('success'),
@@ -23,6 +24,9 @@ const elements = {
   retryBtn: document.getElementById('retry-btn'),
   successFilename: document.getElementById('success-filename'),
   errorMessage: document.getElementById('error-message'),
+  neObjectTitle: document.getElementById('ne-object-title'),
+  neObjectType: document.getElementById('ne-object-type'),
+  neReason: document.getElementById('ne-reason'),
 };
 
 /**
@@ -66,6 +70,16 @@ async function getSavedObjectInfo() {
     
     if (response && response.isKibanaPage && response.savedObject) {
       currentSavedObject = response.savedObject;
+      
+      // Check if this type is not exportable
+      if (response.savedObject.notExportable) {
+        elements.neObjectTitle.textContent = response.savedObject.title || 'Untitled';
+        elements.neObjectType.textContent = response.savedObject.type;
+        elements.neReason.textContent = response.savedObject.notExportableReason || 'This resource type cannot be exported.';
+        showState('notExportable');
+        return;
+      }
+      
       displaySavedObject(response.savedObject);
       
       // Show explore button if there are multiple resources
@@ -111,6 +125,7 @@ async function exportSavedObject() {
       type: currentSavedObject.type,
       id: currentSavedObject.id,
       title: currentSavedObject.title,
+      useAlternativeApi: currentSavedObject.useAlternativeApi || false,
     });
 
     if (response.success) {

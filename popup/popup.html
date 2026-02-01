@@ -26,6 +26,22 @@
         <p class="hint">Navigate to a Kibana dashboard, visualization, lens, saved search, or other resource page.</p>
       </div>
 
+      <!-- Resource detected but not exportable -->
+      <div id="not-exportable" class="state hidden">
+        <div class="icon">🚫</div>
+        <div class="object-info">
+          <div class="info-row">
+            <span class="label">Title:</span>
+            <span id="ne-object-title" class="value">-</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Type:</span>
+            <span id="ne-object-type" class="value badge">-</span>
+          </div>
+        </div>
+        <p id="ne-reason" class="hint"></p>
+      </div>
+
       <!-- Saved object detected -->
       <div id="detected" class="state hidden">
         <div class="object-info">
