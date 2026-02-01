@@ -3,27 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kibana Exporter</title>
+  <title>Kibana as Code</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Kibana Exporter</h1>
+      <h1>Kibana as Code</h1>
     </header>
 
     <main>
       <!-- Loading state -->
       <div id="loading" class="state">
         <div class="spinner"></div>
-        <p>Detecting saved object...</p>
+        <p>Detecting Kibana resource...</p>
       </div>
 
-      <!-- No saved object detected -->
+      <!-- No resource detected -->
       <div id="not-detected" class="state hidden">
         <div class="icon">⚠️</div>
-        <p>No saved object detected on this page.</p>
-        <p class="hint">Navigate to a Kibana dashboard, visualization, lens, saved search, or other saved object page.</p>
+        <p>No exportable resource detected on this page.</p>
+        <p class="hint">Navigate to a Kibana dashboard, visualization, lens, saved search, or other resource page.</p>
       </div>
 
       <!-- Saved object detected -->
@@ -52,7 +52,7 @@
       <!-- Export in progress -->
       <div id="exporting" class="state hidden">
         <div class="spinner"></div>
-        <p>Exporting saved object...</p>
+        <p>Exporting resource...</p>
       </div>
 
       <!-- Export success -->
@@ -72,7 +72,7 @@
     </main>
 
     <footer>
-      <a href="https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-export" target="_blank">API Docs</a>
+      <span class="footer-text">Export Kibana resources as code</span>
     </footer>
   </div>
 

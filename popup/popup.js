@@ -1,4 +1,4 @@
-// Popup script for Kibana Exporter
+// Popup script for Kibana as Code
 
 // State management
 let currentSavedObject = null;
@@ -71,7 +71,7 @@ async function getSavedObjectInfo() {
       showState('notDetected');
     }
   } catch (error) {
-    // console.error('Error getting saved object info:', error);
+    // console.error('[Kibana as Code] Error detecting resource:', error);
     showState('notDetected');
   }
 }
@@ -113,7 +113,7 @@ async function exportSavedObject() {
     }
   } catch (error) {
     console.error('Export error:', error);
-    elements.errorMessage.textContent = error.message || 'Failed to export saved object';
+    elements.errorMessage.textContent = error.message || 'Failed to export resource';
     showState('error');
   }
 }

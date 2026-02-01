@@ -199,6 +199,11 @@ footer a:hover {
   text-decoration: underline;
 }
 
+.footer-text {
+  font-size: 12px;
+  color: #69707d;
+}
+
 /* Center text in states */
 #loading,
 #not-detected,

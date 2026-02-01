@@ -1,4 +1,4 @@
-// Content script for detecting Kibana pages and extracting saved object context
+// Content script for detecting Kibana pages and extracting resource context
 
 // Guard against multiple injections
 if (window.__kibanaExporterLoaded) {
@@ -160,7 +160,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         
         sendResponse(downloadResponse);
       } catch (error) {
-        console.error('[Kibana Exporter] Export error:', error);
+        console.error('[Kibana as Code] Export error:', error);
         sendResponse({ success: false, error: error.message });
       }
     })();
@@ -171,10 +171,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // Log detection on page load for debugging
-console.log('[Kibana Exporter] Content script loaded');
+console.log('[Kibana as Code] Content script loaded');
 const detected = detectSavedObject();
 if (detected) {
-  console.log('[Kibana Exporter] Detected saved object:', detected);
+  console.log('[Kibana as Code] Detected resource:', detected);
 }
 
 } // end initKibanaExporter

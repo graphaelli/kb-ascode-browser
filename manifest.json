@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Kibana Saved Objects Exporter",
+  "name": "Kibana as Code",
   "version": "1.0.0",
-  "description": "Download Kibana saved objects directly from the page as NDJSON files",
+  "description": "Export Kibana dashboards, visualizations, and other resources as code",
   "permissions": [
     "activeTab",
     "scripting",
