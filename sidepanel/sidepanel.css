@@ -35,6 +35,28 @@ header h1 {
   color: #69707d;
 }
 
+/* Auto-refresh toggle */
+.auto-refresh-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #69707d;
+}
+
+.auto-refresh-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #006bb4;
+  cursor: pointer;
+}
+
+.toggle-label {
+  user-select: none;
+}
+
 /* States */
 .state {
   padding: 24px 0;

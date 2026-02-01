@@ -7,9 +7,12 @@ const resourcesContainer = document.getElementById('resources-container');
 const resourcesList = document.getElementById('resources-list');
 const resourceCount = document.getElementById('resource-count');
 const refreshBtn = document.getElementById('refresh-btn');
+const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
 
-// Current tab ID
+// Current tab ID and URL for tracking navigation
 let currentTabId = null;
+let currentTabUrl = null;
+let autoRefreshEnabled = false;
 
 /**
  * Show a specific state
@@ -269,5 +272,51 @@ resourcesList.addEventListener('mouseleave', async (e) => {
   }
 }, true);
 
+// Auto-refresh checkbox handler
+autoRefreshCheckbox.addEventListener('change', async (e) => {
+  autoRefreshEnabled = e.target.checked;
+  await chrome.storage.session.set({ autoRefreshEnabled });
+  
+  if (autoRefreshEnabled) {
+    // Store current URL when enabling
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+      currentTabUrl = tab.url;
+    }
+  }
+});
+
+// Listen for tab updates (URL changes)
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Only care about the current tab and when URL changes
+  if (tabId === currentTabId && changeInfo.url && autoRefreshEnabled) {
+    // URL has changed, trigger refresh
+    currentTabUrl = changeInfo.url;
+    scanForResources();
+  }
+});
+
+// Listen for tab activation (user switches tabs)
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  if (autoRefreshEnabled) {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    if (tab && tab.url !== currentTabUrl) {
+      currentTabId = activeInfo.tabId;
+      currentTabUrl = tab.url;
+      scanForResources();
+    }
+  }
+});
+
+// Initialize auto-refresh state from storage
+async function initAutoRefresh() {
+  const { autoRefreshEnabled: stored } = await chrome.storage.session.get('autoRefreshEnabled');
+  if (stored) {
+    autoRefreshEnabled = true;
+    autoRefreshCheckbox.checked = true;
+  }
+}
+
 // Initialize
+initAutoRefresh();
 scanForResources();
