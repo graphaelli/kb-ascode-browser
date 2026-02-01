@@ -619,6 +619,54 @@ async function getAllResources() {
 }
 
 /**
+ * Extract the visualization subtype (chart type) from a panel
+ */
+function extractPanelSubType(panel) {
+  const embeddableConfig = panel.embeddableConfig || {};
+  const attributes = embeddableConfig.attributes || {};
+  const state = attributes.state || {};
+  const visualization = state.visualization || {};
+  
+  // For Lens visualizations, get the preferred series type or visualization type
+  if (panel.type === 'lens') {
+    // Try to get from visualization.preferredSeriesType (most common for XY charts)
+    if (visualization.preferredSeriesType) {
+      // Clean up the series type name (e.g., "bar_stacked" -> "bar stacked")
+      return visualization.preferredSeriesType.replace(/_/g, ' ');
+    }
+    
+    // Try to get from attributes.visualizationType (e.g., "lnsXY", "lnsMetric", "lnsPie")
+    if (attributes.visualizationType) {
+      const vizType = attributes.visualizationType;
+      // Map common Lens visualization types to friendly names
+      const typeMap = {
+        'lnsXY': 'xy',
+        'lnsMetric': 'metric',
+        'lnsPie': 'pie',
+        'lnsDatatable': 'table',
+        'lnsLegacyMetric': 'metric',
+        'lnsGauge': 'gauge',
+        'lnsHeatmap': 'heatmap',
+        'lnsTagcloud': 'tag cloud',
+        'lnsMosaic': 'mosaic',
+        'lnsPartition': 'partition',
+      };
+      return typeMap[vizType] || vizType.replace(/^lns/, '').toLowerCase();
+    }
+  }
+  
+  // For legacy visualizations, get the vis type
+  if (panel.type === 'visualization') {
+    const savedVis = embeddableConfig.savedVis || {};
+    if (savedVis.type) {
+      return savedVis.type;
+    }
+  }
+  
+  return null;
+}
+
+/**
  * Extract title from a panel object
  */
 function extractPanelTitle(panel) {
@@ -684,20 +732,11 @@ async function getEmbeddedPanelsFromAPI(dashboardId) {
   
   for (const panel of panels) {
     const title = extractPanelTitle(panel);
-    
-    // Debug logging - log FULL panel object to find where title is stored
-    console.log('[Kibana as Code] Full panel object:', JSON.stringify(panel, null, 2));
-    console.log('[Kibana as Code] Panel title extraction:', { 
-      panelIndex: panel.panelIndex, 
-      type: panel.type, 
-      extractedTitle: title,
-      'panel.title': panel.title,
-      'embeddableConfig.title': panel.embeddableConfig?.title,
-      'attributes.title': panel.embeddableConfig?.attributes?.title,
-    });
+    const subType = extractPanelSubType(panel);
     
     resources.push({
       type: panel.type,
+      subType: subType,
       id: null, // Embedded panels don't have their own saved object ID
       title: title,
       panelIndex: panel.panelIndex,

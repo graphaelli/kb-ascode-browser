@@ -46,8 +46,9 @@ function renderResourceItem(resource, index) {
   li.dataset.index = index;
   
   let typeLabel = resource.type;
-  if (isEmbedded) {
-    typeLabel += ' (embedded)';
+  if (resource.subType) {
+    // Show subtype for visualizations (e.g., "lens (bar)", "visualization (markdown)")
+    typeLabel += ` (${resource.subType})`;
   } else if (usesAltApi) {
     typeLabel += ' (json)';
   }
