@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kibana Exporter</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Kibana Exporter</h1>
+    </header>
+
+    <main>
+      <!-- Loading state -->
+      <div id="loading" class="state">
+        <div class="spinner"></div>
+        <p>Detecting saved object...</p>
+      </div>
+
+      <!-- No saved object detected -->
+      <div id="not-detected" class="state hidden">
+        <div class="icon">⚠️</div>
+        <p>No saved object detected on this page.</p>
+        <p class="hint">Navigate to a Kibana dashboard, visualization, lens, saved search, or other saved object page.</p>
+      </div>
+
+      <!-- Saved object detected -->
+      <div id="detected" class="state hidden">
+        <div class="object-info">
+          <div class="info-row">
+            <span class="label">Title:</span>
+            <span id="object-title" class="value">-</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Type:</span>
+            <span id="object-type" class="value badge">-</span>
+          </div>
+          <div class="info-row">
+            <span class="label">ID:</span>
+            <span id="object-id" class="value mono">-</span>
+          </div>
+        </div>
+        
+        <button id="export-btn" class="export-button">
+          <span class="btn-icon">⬇️</span>
+          Export as NDJSON
+        </button>
+      </div>
+
+      <!-- Export in progress -->
+      <div id="exporting" class="state hidden">
+        <div class="spinner"></div>
+        <p>Exporting saved object...</p>
+      </div>
+
+      <!-- Export success -->
+      <div id="success" class="state hidden">
+        <div class="icon success">✅</div>
+        <p>Export successful!</p>
+        <p id="success-filename" class="filename"></p>
+      </div>
+
+      <!-- Export error -->
+      <div id="error" class="state hidden">
+        <div class="icon error">❌</div>
+        <p>Export failed</p>
+        <p id="error-message" class="error-text"></p>
+        <button id="retry-btn" class="retry-button">Try Again</button>
+      </div>
+    </main>
+
+    <footer>
+      <a href="https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-export" target="_blank">API Docs</a>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

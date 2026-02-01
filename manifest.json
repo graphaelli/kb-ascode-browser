@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Kibana Saved Objects Exporter",
+  "version": "1.0.0",
+  "description": "Download Kibana saved objects directly from the page as NDJSON files",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "downloads"
+  ],
+  "host_permissions": [
+    "*://*.elastic.co/*",
+    "*://*.cloud.es.io/*",
+    "*://localhost:*/*",
+    "*://127.0.0.1:*/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.elastic.co/*",
+        "*://*.cloud.es.io/*",
+        "*://localhost:*/*",
+        "*://127.0.0.1:*/*"
+      ],
+      "js": ["content/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
