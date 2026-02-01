@@ -8,28 +8,10 @@
     "scripting",
     "downloads"
   ],
-  "host_permissions": [
-    "*://*.elastic.co/*",
-    "*://*.cloud.es.io/*",
-    "*://localhost:*/*",
-    "*://127.0.0.1:*/*"
-  ],
   "action": {
     "default_popup": "popup/popup.html"
   },
   "background": {
     "service_worker": "background/background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "*://*.elastic.co/*",
-        "*://*.cloud.es.io/*",
-        "*://localhost:*/*",
-        "*://127.0.0.1:*/*"
-      ],
-      "js": ["content/content.js"],
-      "run_at": "document_idle"
-    }
-  ]
+  }
 }

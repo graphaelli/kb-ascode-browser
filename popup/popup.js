@@ -2,7 +2,7 @@
 
 // State management
 let currentSavedObject = null;
-let currentBaseUrl = null;
+let currentTabId = null;
 
 // DOM elements
 const states = {
@@ -38,7 +38,7 @@ function showState(stateName) {
 }
 
 /**
- * Query the content script for saved object info
+ * Inject content script and get saved object info
  */
 async function getSavedObjectInfo() {
   try {
@@ -49,12 +49,22 @@ async function getSavedObjectInfo() {
       return;
     }
 
+    currentTabId = tab.id;
+
+    // Inject content script programmatically (uses activeTab permission)
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ['content/content.js']
+    });
+
+    // Give script a moment to initialize, then query for info
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     // Send message to content script
     const response = await chrome.tabs.sendMessage(tab.id, { action: 'getSavedObjectInfo' });
     
     if (response && response.isKibanaPage && response.savedObject) {
       currentSavedObject = response.savedObject;
-      currentBaseUrl = response.baseUrl;
       displaySavedObject(response.savedObject);
       showState('detected');
     } else {
@@ -79,18 +89,15 @@ function displaySavedObject(savedObject) {
  * Export the current saved object
  */
 async function exportSavedObject() {
-  if (!currentSavedObject) {
+  if (!currentSavedObject || !currentTabId) {
     return;
   }
 
   showState('exporting');
 
   try {
-    // Get the active tab
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    
     // Send export request to content script (which has page context for API calls)
-    const response = await chrome.tabs.sendMessage(tab.id, {
+    const response = await chrome.tabs.sendMessage(currentTabId, {
       action: 'exportSavedObject',
       type: currentSavedObject.type,
       id: currentSavedObject.id,

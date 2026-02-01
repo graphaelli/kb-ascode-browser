@@ -1,5 +1,15 @@
 // Content script for detecting Kibana pages and extracting saved object context
 
+// Guard against multiple injections
+if (window.__kibanaExporterLoaded) {
+  // Already loaded, skip initialization
+} else {
+  window.__kibanaExporterLoaded = true;
+  initKibanaExporter();
+}
+
+function initKibanaExporter() {
+
 /**
  * URL patterns for different Kibana saved object types
  * IDs can be UUIDs or custom strings - capture until query params or end
@@ -166,3 +176,5 @@ const detected = detectSavedObject();
 if (detected) {
   console.log('[Kibana Exporter] Detected saved object:', detected);
 }
+
+} // end initKibanaExporter
