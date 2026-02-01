@@ -653,7 +653,125 @@ async function hasMultipleResources() {
 /**
  * Listen for messages from the popup or background script
  */
+// Store for highlighted element
+let highlightedElement = null;
+let highlightOverlay = null;
+
+/**
+ * Create highlight overlay for a panel
+ */
+function highlightPanel(panelIndex, resourceIndex) {
+  // Remove any existing highlight
+  unhighlightPanel();
+  
+  // Find panel elements on the page
+  const panelSelectors = [
+    '[data-test-subj="embeddablePanel"]',
+    '.embPanel',
+    '[data-test-embeddable-id]',
+    '.dshDashboardGrid__item',
+    '[data-grid-item-id]',
+  ];
+  
+  let panelElements = [];
+  for (const selector of panelSelectors) {
+    const elements = document.querySelectorAll(selector);
+    if (elements.length > 0) {
+      panelElements = Array.from(elements);
+      break;
+    }
+  }
+  
+  if (panelElements.length === 0) {
+    console.log('[Kibana as Code] No panel elements found');
+    return;
+  }
+  
+  // Sort panels by position to match our resource list order
+  panelElements.sort((a, b) => {
+    const aRect = a.getBoundingClientRect();
+    const bRect = b.getBoundingClientRect();
+    const rowThreshold = 50;
+    const rowDiff = aRect.top - bRect.top;
+    if (Math.abs(rowDiff) > rowThreshold) {
+      return rowDiff;
+    }
+    return aRect.left - bRect.left;
+  });
+  
+  // Resource index 0 is the dashboard itself, so embedded panels start at index 1
+  const panelElementIndex = resourceIndex - 1;
+  
+  if (panelElementIndex >= 0 && panelElementIndex < panelElements.length) {
+    const panel = panelElements[panelElementIndex];
+    highlightedElement = panel;
+    
+    // Create overlay
+    const rect = panel.getBoundingClientRect();
+    highlightOverlay = document.createElement('div');
+    highlightOverlay.id = 'kibana-as-code-highlight';
+    highlightOverlay.style.cssText = `
+      position: fixed;
+      top: ${rect.top}px;
+      left: ${rect.left}px;
+      width: ${rect.width}px;
+      height: ${rect.height}px;
+      border: 3px solid #006bb4;
+      border-radius: 4px;
+      background: rgba(0, 107, 180, 0.1);
+      pointer-events: none;
+      z-index: 10000;
+      transition: all 0.15s ease-out;
+      box-shadow: 0 0 20px rgba(0, 107, 180, 0.3);
+    `;
+    document.body.appendChild(highlightOverlay);
+    
+    // Scroll panel into view if needed
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+/**
+ * Remove highlight overlay
+ */
+function unhighlightPanel() {
+  if (highlightOverlay) {
+    highlightOverlay.remove();
+    highlightOverlay = null;
+  }
+  highlightedElement = null;
+}
+
+/**
+ * Update highlight overlay position (for scroll/resize)
+ */
+function updateHighlightPosition() {
+  if (highlightedElement && highlightOverlay) {
+    const rect = highlightedElement.getBoundingClientRect();
+    highlightOverlay.style.top = `${rect.top}px`;
+    highlightOverlay.style.left = `${rect.left}px`;
+    highlightOverlay.style.width = `${rect.width}px`;
+    highlightOverlay.style.height = `${rect.height}px`;
+  }
+}
+
+// Update highlight position on scroll/resize
+window.addEventListener('scroll', updateHighlightPosition, true);
+window.addEventListener('resize', updateHighlightPosition);
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'highlightPanel') {
+    highlightPanel(request.panelIndex, request.index);
+    sendResponse({ success: true });
+    return true;
+  }
+  
+  if (request.action === 'unhighlightPanel') {
+    unhighlightPanel();
+    sendResponse({ success: true });
+    return true;
+  }
+  
   if (request.action === 'getSavedObjectInfo') {
     (async () => {
       const savedObject = detectSavedObject();

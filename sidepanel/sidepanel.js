@@ -235,5 +235,39 @@ resourcesList.addEventListener('click', (e) => {
   }
 });
 
+// Highlight panel on hover
+resourcesList.addEventListener('mouseenter', async (e) => {
+  const item = e.target.closest('.resource-item');
+  if (item && currentTabId) {
+    const index = parseInt(item.dataset.index, 10);
+    const { panelResources } = await chrome.storage.session.get('panelResources');
+    if (panelResources && panelResources[index]) {
+      const resource = panelResources[index];
+      try {
+        await chrome.tabs.sendMessage(currentTabId, {
+          action: 'highlightPanel',
+          panelIndex: resource.panelIndex,
+          index: index,
+        });
+      } catch (e) {
+        // Ignore errors if content script not ready
+      }
+    }
+  }
+}, true);
+
+resourcesList.addEventListener('mouseleave', async (e) => {
+  const item = e.target.closest('.resource-item');
+  if (item && currentTabId) {
+    try {
+      await chrome.tabs.sendMessage(currentTabId, {
+        action: 'unhighlightPanel',
+      });
+    } catch (e) {
+      // Ignore errors
+    }
+  }
+}, true);
+
 // Initialize
 scanForResources();
