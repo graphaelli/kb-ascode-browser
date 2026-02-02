@@ -67,7 +67,6 @@ jobs:
           
           # Save to file for multi-line output
           echo "$CHANGELOG" > changelog.txt
-          echo "PREV_TAG=$PREV_TAG" >> $GITHUB_OUTPUT
       
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
