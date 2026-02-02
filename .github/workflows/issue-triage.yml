@@ -1,185 +1,115 @@
-name: Issue Triage
+name: Issue Triage with Cursor Agent
 
 on:
   issues:
-    types: [opened, edited]
-  issue_comment:
-    types: [created]
+    types: [opened]
 
 permissions:
   issues: write
   contents: read
+  pull-requests: write
 
 jobs:
   triage:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Check if issue opener is a collaborator
+        id: check_collaborator
+        uses: actions/github-script@v7
         with:
-          node-version: '20'
+          script: |
+            try {
+              const { data: permission } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: context.payload.issue.user.login
+              });
+              
+              const isCollaborator = ['admin', 'write', 'maintain'].includes(permission.permission);
+              console.log(`User ${context.payload.issue.user.login} permission: ${permission.permission}`);
+              console.log(`Is collaborator: ${isCollaborator}`);
+              
+              return isCollaborator;
+            } catch (error) {
+              console.log(`User is not a collaborator: ${error.message}`);
+              return false;
+            }
+          result-encoding: string
 
-      - name: Analyze and triage issue
+      - name: Trigger Cursor Cloud Agent investigation
+        if: steps.check_collaborator.outputs.result == 'true'
         uses: actions/github-script@v7
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         with:
           script: |
             const issue = context.payload.issue;
-            if (!issue) return;
+            
+            // Add a comment indicating investigation is starting
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: '🔍 Cursor Cloud Agent is investigating this issue...'
+            });
+            
+            // Prepare the investigation prompt for Cursor Agent
+            const investigationPrompt = `Investigate this issue and provide analysis:
 
-            const title = issue.title.toLowerCase();
-            const body = (issue.body || '').toLowerCase();
-            const labels = [];
+**Issue #${issue.number}: ${issue.title}**
 
-            // Feature requests
-            if (title.includes('feature') || title.includes('enhancement') || 
-                body.includes('it would be nice') || body.includes('could you add')) {
-              labels.push('enhancement');
-            }
+${issue.body || '(no description provided)'}
 
-            // Bug reports
-            if (title.includes('bug') || title.includes('error') || title.includes('broken') ||
-                title.includes('not working') || title.includes('issue') || title.includes('fail') ||
-                body.includes('error') || body.includes('doesn\'t work') || body.includes('broken')) {
-              labels.push('bug');
-            }
+---
 
-            // Documentation
-            if (title.includes('doc') || title.includes('readme') || title.includes('guide') ||
-                body.includes('documentation') || body.includes('unclear')) {
-              labels.push('documentation');
-            }
+Please:
+1. Analyze the issue to determine if it's a bug, enhancement, question, or other type
+2. Review the codebase to understand the context
+3. If it's a bug, try to locate the relevant code and identify potential causes
+4. If it's an enhancement, assess feasibility and suggest an approach
+5. Provide a summary of findings in a comment
+6. Add appropriate labels (bug, enhancement, question, etc.)
+7. If the fix is trivial (< 10 lines), you may open a PR
+8. Otherwise, suggest a plan and await review before implementing
 
-            // Questions
-            if (title.includes('how to') || title.includes('how do') || title.includes('question') ||
-                title.startsWith('?') || body.includes('how can i') || body.includes('how do i')) {
-              labels.push('question');
-            }
+Repository: ${context.repo.owner}/${context.repo.repo}
+Issue URL: ${issue.html_url}`;
 
-            // Kibana version detection
-            if (body.includes('kibana')) {
-              if (body.match(/kibana\s*8/i)) {
-                labels.push('kibana-8.x');
-              } else if (body.match(/kibana\s*7/i)) {
-                labels.push('kibana-7.x');
-              }
-            }
-
-            // Export-related issues
-            if (title.includes('export') || body.includes('export') || 
-                title.includes('download') || body.includes('download')) {
-              labels.push('export');
-            }
-
-            // Dashboard-specific issues
-            if (title.includes('dashboard') || body.includes('dashboard')) {
-              labels.push('dashboard');
-            }
-
-            // Panel/visualization issues
-            if (title.includes('panel') || title.includes('visualization') || 
-                title.includes('lens') || body.includes('panel') || 
-                body.includes('visualization') || body.includes('lens')) {
-              labels.push('visualization');
-            }
-
-            // API issues
-            if (title.includes('api') || body.includes('api') || 
-                body.includes('endpoint') || body.includes('request')) {
-              labels.push('api');
-              }
-
-            // Browser compatibility
-            if (title.includes('chrome') || title.includes('browser') ||
-                body.includes('chrome') || body.includes('browser')) {
-              labels.push('browser');
-            }
-
-            // Priority detection
-            if (title.includes('critical') || title.includes('urgent') || 
-                body.includes('critical') || body.includes('urgent') ||
-                body.includes('production') || body.includes('blocker')) {
-              labels.push('priority: high');
-            }
-
-            // Good first issue detection
-            if (title.includes('typo') || title.includes('spelling') ||
-                body.includes('simple fix') || body.includes('small change')) {
-              labels.push('good first issue');
-            }
-
-            // Apply labels if we found any
-            if (labels.length > 0) {
-              // Get existing labels
-              const existingLabels = issue.labels.map(l => l.name);
-              
-              // Only add new labels
-              const newLabels = labels.filter(l => !existingLabels.includes(l));
-              
-              if (newLabels.length > 0) {
-                await github.rest.issues.addLabels({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issue.number,
-                  labels: newLabels
-                });
-                
-                console.log(`Added labels: ${newLabels.join(', ')}`);
-              }
-            }
-
-            // Add helpful comment for bug reports without enough info
-            if (labels.includes('bug')) {
-              const hasSteps = body.includes('steps') || body.includes('reproduce');
-              const hasVersion = body.includes('version') || body.includes('kibana');
-              const hasBrowser = body.includes('chrome') || body.includes('browser');
-              
-              if (!hasSteps || !hasVersion || !hasBrowser) {
-                const missingInfo = [];
-                if (!hasSteps) missingInfo.push('steps to reproduce');
-                if (!hasVersion) missingInfo.push('Kibana version');
-                if (!hasBrowser) missingInfo.push('browser version');
-                
-                // Check if we already commented
-                const { data: comments } = await github.rest.issues.listComments({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issue.number
-                });
-                
-                const botCommented = comments.some(c => 
-                  c.user.type === 'Bot' && c.body.includes('help us investigate'));
-                
-                if (!botCommented) {
-                  await github.rest.issues.createComment({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: issue.number,
-                    body: `Thank you for reporting this issue! To help us investigate, please provide the following information:\n\n${missingInfo.map(i => `- [ ] ${i}`).join('\n')}\n\nThis will help us reproduce and fix the issue more quickly.`
-                  });
-                }
-              }
-            }
-
-            // Welcome new contributors
-            if (context.payload.action === 'opened') {
-              const { data: issues } = await github.rest.issues.listForRepo({
+            // Note: This is a placeholder for Cursor Cloud Agent integration
+            // The actual implementation would use Cursor's API to trigger an agent
+            // For now, we'll use the GitHub API to trigger a repository dispatch
+            // that can be picked up by Cursor's agent system
+            
+            try {
+              await github.rest.repos.createDispatchEvent({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                creator: issue.user.login,
-                state: 'all'
+                event_type: 'cursor_agent_triage',
+                client_payload: {
+                  issue_number: issue.number,
+                  issue_title: issue.title,
+                  issue_body: issue.body,
+                  issue_url: issue.html_url,
+                  prompt: investigationPrompt
+                }
               });
               
-              if (issues.length === 1) {
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issue.number,
-                  body: `👋 Welcome @${issue.user.login}! Thanks for opening your first issue in this repository. We'll review it as soon as possible.`
-                });
-              }
+              console.log('Triggered Cursor Agent investigation via repository_dispatch');
+            } catch (error) {
+              console.error('Failed to trigger Cursor Agent:', error.message);
+              
+              // Fallback: provide a helpful comment with manual investigation guidance
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `⚠️ Unable to automatically trigger Cursor Cloud Agent investigation.
+
+**Manual investigation needed:**
+- Review the issue details above
+- Determine issue type (bug/enhancement/question)
+- Check relevant code sections
+- Add appropriate labels
+- Respond with findings or implementation plan`
+              });
             }
