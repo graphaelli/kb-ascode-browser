@@ -1,0 +1,48 @@
+name: Issue Triage with Cursor Agent
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if issue opener is a collaborator
+        id: check_collaborator
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              const { data: permission } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: context.payload.issue.user.login
+              });
+              
+              const isCollaborator = ['admin', 'write', 'maintain'].includes(permission.permission);
+              console.log(`User ${context.payload.issue.user.login} permission: ${permission.permission}`);
+              console.log(`Is collaborator: ${isCollaborator}`);
+              
+              return isCollaborator;
+            } catch (error) {
+              console.log(`User is not a collaborator: ${error.message}`);
+              return false;
+            }
+          result-encoding: string
+
+      - name: Request Cursor Agent triage
+        if: steps.check_collaborator.outputs.result == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: `@cursor please investigate this issue and provide analysis. Determine if it's a bug, enhancement, or question. Review the codebase for context. If it's a trivial fix (< 10 lines), you may open a PR. Otherwise, suggest a plan and await review.`
+            });
