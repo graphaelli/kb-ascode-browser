@@ -1,0 +1,185 @@
+name: Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Analyze and triage issue
+        uses: actions/github-script@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          script: |
+            const issue = context.payload.issue;
+            if (!issue) return;
+
+            const title = issue.title.toLowerCase();
+            const body = (issue.body || '').toLowerCase();
+            const labels = [];
+
+            // Feature requests
+            if (title.includes('feature') || title.includes('enhancement') || 
+                body.includes('it would be nice') || body.includes('could you add')) {
+              labels.push('enhancement');
+            }
+
+            // Bug reports
+            if (title.includes('bug') || title.includes('error') || title.includes('broken') ||
+                title.includes('not working') || title.includes('issue') || title.includes('fail') ||
+                body.includes('error') || body.includes('doesn\'t work') || body.includes('broken')) {
+              labels.push('bug');
+            }
+
+            // Documentation
+            if (title.includes('doc') || title.includes('readme') || title.includes('guide') ||
+                body.includes('documentation') || body.includes('unclear')) {
+              labels.push('documentation');
+            }
+
+            // Questions
+            if (title.includes('how to') || title.includes('how do') || title.includes('question') ||
+                title.startsWith('?') || body.includes('how can i') || body.includes('how do i')) {
+              labels.push('question');
+            }
+
+            // Kibana version detection
+            if (body.includes('kibana')) {
+              if (body.match(/kibana\s*8/i)) {
+                labels.push('kibana-8.x');
+              } else if (body.match(/kibana\s*7/i)) {
+                labels.push('kibana-7.x');
+              }
+            }
+
+            // Export-related issues
+            if (title.includes('export') || body.includes('export') || 
+                title.includes('download') || body.includes('download')) {
+              labels.push('export');
+            }
+
+            // Dashboard-specific issues
+            if (title.includes('dashboard') || body.includes('dashboard')) {
+              labels.push('dashboard');
+            }
+
+            // Panel/visualization issues
+            if (title.includes('panel') || title.includes('visualization') || 
+                title.includes('lens') || body.includes('panel') || 
+                body.includes('visualization') || body.includes('lens')) {
+              labels.push('visualization');
+            }
+
+            // API issues
+            if (title.includes('api') || body.includes('api') || 
+                body.includes('endpoint') || body.includes('request')) {
+              labels.push('api');
+              }
+
+            // Browser compatibility
+            if (title.includes('chrome') || title.includes('browser') ||
+                body.includes('chrome') || body.includes('browser')) {
+              labels.push('browser');
+            }
+
+            // Priority detection
+            if (title.includes('critical') || title.includes('urgent') || 
+                body.includes('critical') || body.includes('urgent') ||
+                body.includes('production') || body.includes('blocker')) {
+              labels.push('priority: high');
+            }
+
+            // Good first issue detection
+            if (title.includes('typo') || title.includes('spelling') ||
+                body.includes('simple fix') || body.includes('small change')) {
+              labels.push('good first issue');
+            }
+
+            // Apply labels if we found any
+            if (labels.length > 0) {
+              // Get existing labels
+              const existingLabels = issue.labels.map(l => l.name);
+              
+              // Only add new labels
+              const newLabels = labels.filter(l => !existingLabels.includes(l));
+              
+              if (newLabels.length > 0) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  labels: newLabels
+                });
+                
+                console.log(`Added labels: ${newLabels.join(', ')}`);
+              }
+            }
+
+            // Add helpful comment for bug reports without enough info
+            if (labels.includes('bug')) {
+              const hasSteps = body.includes('steps') || body.includes('reproduce');
+              const hasVersion = body.includes('version') || body.includes('kibana');
+              const hasBrowser = body.includes('chrome') || body.includes('browser');
+              
+              if (!hasSteps || !hasVersion || !hasBrowser) {
+                const missingInfo = [];
+                if (!hasSteps) missingInfo.push('steps to reproduce');
+                if (!hasVersion) missingInfo.push('Kibana version');
+                if (!hasBrowser) missingInfo.push('browser version');
+                
+                // Check if we already commented
+                const { data: comments } = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number
+                });
+                
+                const botCommented = comments.some(c => 
+                  c.user.type === 'Bot' && c.body.includes('help us investigate'));
+                
+                if (!botCommented) {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    body: `Thank you for reporting this issue! To help us investigate, please provide the following information:\n\n${missingInfo.map(i => `- [ ] ${i}`).join('\n')}\n\nThis will help us reproduce and fix the issue more quickly.`
+                  });
+                }
+              }
+            }
+
+            // Welcome new contributors
+            if (context.payload.action === 'opened') {
+              const { data: issues } = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                creator: issue.user.login,
+                state: 'all'
+              });
+              
+              if (issues.length === 1) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: `👋 Welcome @${issue.user.login}! Thanks for opening your first issue in this repository. We'll review it as soon as possible.`
+                });
+              }
+            }
