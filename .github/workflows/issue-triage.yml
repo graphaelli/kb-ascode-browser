@@ -7,7 +7,6 @@ on:
 permissions:
   issues: write
   contents: read
-  pull-requests: write
 
 jobs:
   triage:
@@ -36,80 +35,14 @@ jobs:
             }
           result-encoding: string
 
-      - name: Trigger Cursor Cloud Agent investigation
+      - name: Request Cursor Agent triage
         if: steps.check_collaborator.outputs.result == 'true'
         uses: actions/github-script@v7
-        env:
-          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         with:
           script: |
-            const issue = context.payload.issue;
-            
-            // Add a comment indicating investigation is starting
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: issue.number,
-              body: '🔍 Cursor Cloud Agent is investigating this issue...'
+              issue_number: context.payload.issue.number,
+              body: `@cursor please investigate this issue and provide analysis. Determine if it's a bug, enhancement, or question. Review the codebase for context. If it's a trivial fix (< 10 lines), you may open a PR. Otherwise, suggest a plan and await review.`
             });
-            
-            // Prepare the investigation prompt for Cursor Agent
-            const investigationPrompt = `Investigate this issue and provide analysis:
-
-**Issue #${issue.number}: ${issue.title}**
-
-${issue.body || '(no description provided)'}
-
----
-
-Please:
-1. Analyze the issue to determine if it's a bug, enhancement, question, or other type
-2. Review the codebase to understand the context
-3. If it's a bug, try to locate the relevant code and identify potential causes
-4. If it's an enhancement, assess feasibility and suggest an approach
-5. Provide a summary of findings in a comment
-6. Add appropriate labels (bug, enhancement, question, etc.)
-7. If the fix is trivial (< 10 lines), you may open a PR
-8. Otherwise, suggest a plan and await review before implementing
-
-Repository: ${context.repo.owner}/${context.repo.repo}
-Issue URL: ${issue.html_url}`;
-
-            // Note: This is a placeholder for Cursor Cloud Agent integration
-            // The actual implementation would use Cursor's API to trigger an agent
-            // For now, we'll use the GitHub API to trigger a repository dispatch
-            // that can be picked up by Cursor's agent system
-            
-            try {
-              await github.rest.repos.createDispatchEvent({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                event_type: 'cursor_agent_triage',
-                client_payload: {
-                  issue_number: issue.number,
-                  issue_title: issue.title,
-                  issue_body: issue.body,
-                  issue_url: issue.html_url,
-                  prompt: investigationPrompt
-                }
-              });
-              
-              console.log('Triggered Cursor Agent investigation via repository_dispatch');
-            } catch (error) {
-              console.error('Failed to trigger Cursor Agent:', error.message);
-              
-              // Fallback: provide a helpful comment with manual investigation guidance
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                body: `⚠️ Unable to automatically trigger Cursor Cloud Agent investigation.
-
-**Manual investigation needed:**
-- Review the issue details above
-- Determine issue type (bug/enhancement/question)
-- Check relevant code sections
-- Add appropriate labels
-- Respond with findings or implementation plan`
-              });
-            }
