@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Kibana as Code",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Export Kibana dashboards, visualizations, and other resources as code",
   "permissions": [
     "activeTab",
