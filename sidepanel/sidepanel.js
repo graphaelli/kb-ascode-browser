@@ -9,6 +9,31 @@ const resourceCount = document.getElementById('resource-count');
 const refreshBtn = document.getElementById('refresh-btn');
 const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
 
+/**
+ * Generate a deterministic color from a string using HSL color space
+ * Ensures consistent colors for the same type/subtype combination
+ */
+function stringToColor(str) {
+  // Generate hash from string
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  
+  // Use hash to generate HSL values
+  // Hue: full range (0-360) for maximum color variety
+  const hue = Math.abs(hash) % 360;
+  
+  // Saturation: 65-75% for vibrant but professional colors
+  const saturation = 65 + (Math.abs(hash >> 8) % 11);
+  
+  // Lightness: 40-45% for good contrast with white text
+  const lightness = 40 + (Math.abs(hash >> 16) % 6);
+  
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
+
 // Current tab ID and URL for tracking navigation
 let currentTabId = null;
 let currentTabUrl = null;
@@ -60,13 +85,22 @@ function renderResourceItem(resource, index) {
     disabledReason = 'Cannot export this resource';
   }
   
+  // Generate deterministic color based on type + subtype combination
+  // Skip color generation for not-exportable items (use CSS default gray)
+  let typeColorStyle = '';
+  if (!isNotExportable) {
+    const colorKey = resource.subType ? `${resource.type}-${resource.subType}` : resource.type;
+    const typeColor = stringToColor(colorKey);
+    typeColorStyle = `style="background-color: ${typeColor}"`;
+  }
+  
   li.innerHTML = `
     <div class="resource-content">
       <div class="resource-header">
         <div class="resource-info">
           <div class="resource-title">${escapeHtml(resource.title || 'Untitled')}</div>
           <div class="resource-meta">
-            <span class="resource-type${isEmbedded ? ' embedded' : ''}${usesAltApi ? ' alt-api' : ''}${isNotExportable ? ' not-exportable' : ''}">${escapeHtml(typeLabel)}</span>
+            <span class="resource-type${isEmbedded ? ' embedded' : ''}${usesAltApi ? ' alt-api' : ''}${isNotExportable ? ' not-exportable' : ''}" ${typeColorStyle}>${escapeHtml(typeLabel)}</span>
             ${resource.id ? `<span class="resource-id" title="${escapeHtml(resource.id)}">${escapeHtml(resource.id)}</span>` : ''}
           </div>
           ${isNotExportable ? `<div class="not-exportable-reason">${escapeHtml(disabledReason)}</div>` : ''}
