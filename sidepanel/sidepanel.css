@@ -177,7 +177,7 @@ header h1 {
 }
 
 .resource-type {
-  background: #006bb4;
+  background: #006bb4; /* Fallback color if inline style not applied */
   color: white;
   padding: 2px 8px;
   border-radius: 4px;
@@ -190,14 +190,8 @@ header h1 {
   background: #98a2b3;
 }
 
-.resource-type.embedded {
-  background: #7c3aed;
-}
-
-.resource-type.alt-api {
-  background: #0d9488;
-}
-
+/* Color is now dynamically generated via inline styles based on type+subtype */
+/* Keep not-exportable as gray to indicate disabled state */
 .resource-type.not-exportable {
   background: #98a2b3;
 }
