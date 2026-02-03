@@ -270,7 +270,7 @@ async function scanForResources() {
       showState('no-resources');
     }
   } catch (error) {
-    console.error('[Kibana as Code] Error scanning for resources:', error);
+    console.warn('[Kibana as Code] Error scanning for resources:', error);
     showState('no-resources');
   }
 }

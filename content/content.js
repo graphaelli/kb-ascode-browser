@@ -608,7 +608,7 @@ async function getAllResources() {
       const panels = await getEmbeddedPanelsFromAPI(mainResource.id);
       resources.push(...panels);
     } catch (error) {
-      console.error('[Kibana as Code] Error fetching embedded panels:', error);
+      console.warn('[Kibana as Code] Error fetching embedded panels:', error);
       // Fallback to DOM detection
       const domPanels = detectEmbeddedPanels();
       resources.push(...domPanels);
@@ -883,7 +883,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           // Additional resources = total - 1 (the main dashboard)
           additionalResourceCount = Math.max(0, resources.length - 1);
         } catch (e) {
-          console.error('[Kibana as Code] Error getting resource count:', e);
+          console.warn('[Kibana as Code] Error getting resource count:', e);
         }
       }
       
@@ -903,7 +903,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const resources = await getAllResources();
         sendResponse({ resources });
       } catch (error) {
-        console.error('[Kibana as Code] Error getting all resources:', error);
+        console.warn('[Kibana as Code] Error getting all resources:', error);
         sendResponse({ resources: [] });
       }
     })();
