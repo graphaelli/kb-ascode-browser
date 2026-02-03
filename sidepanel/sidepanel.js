@@ -100,7 +100,7 @@ function renderResourceItem(resource, index) {
         <div class="resource-info">
           <div class="resource-title">${escapeHtml(resource.title || 'Untitled')}</div>
           <div class="resource-meta">
-            <span class="resource-type${isEmbedded ? ' embedded' : ''}${usesAltApi ? ' alt-api' : ''}${isNotExportable ? ' not-exportable' : ''}" ${typeColorStyle}>${escapeHtml(typeLabel)}</span>
+            <span class="resource-type${isNotExportable ? ' not-exportable' : ''}" ${typeColorStyle}>${escapeHtml(typeLabel)}</span>
             ${resource.id ? `<span class="resource-id" title="${escapeHtml(resource.id)}">${escapeHtml(resource.id)}</span>` : ''}
           </div>
           ${isNotExportable ? `<div class="not-exportable-reason">${escapeHtml(disabledReason)}</div>` : ''}
