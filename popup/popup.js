@@ -172,7 +172,7 @@ async function openSidePanel() {
     // Close the popup
     window.close();
   } catch (error) {
-    console.error('[Kibana as Code] Error opening side panel:', error);
+    console.warn('[Kibana as Code] Error opening side panel:', error);
   }
 }
 
