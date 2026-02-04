@@ -42,17 +42,21 @@ jobs:
           github-token: ${{ secrets.TRIAGE_PAT }}
           script: |
             const issueNumber = context.payload.issue.number;
-            const message = [
+            const mainText = [
               '@cursor please investigate this issue and provide analysis.',
               'Determine if it\'s a bug, enhancement, or question.',
               'Review the codebase for context.',
               'If it\'s a trivial fix (simple changes like renaming, logging level adjustments, typos,',
               'or straightforward replacements, even across multiple files), open a PR directly.',
-              'Otherwise, suggest a plan and await review.',
-              '',
+              'Otherwise, suggest a plan and await review.'
+            ].join(' ');
+
+            const importantNote = [
               `**Important:** If you create a PR, include "Closes #${issueNumber}" in the PR description`,
               'to automatically link and close this issue when merged.'
             ].join(' ');
+
+            const message = `${mainText}\n\n${importantNote}`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
