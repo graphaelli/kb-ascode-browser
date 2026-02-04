@@ -1,5 +1,8 @@
 // Background service worker for Kibana as Code - handles file downloads
 
+// Import logger
+importScripts('../shared/logger.js');
+
 /**
  * Sanitize a string for use as a filename
  */
@@ -67,7 +70,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         
         sendResponse({ success: true, filename });
       } catch (error) {
-        console.error('[Kibana as Code] Download error:', error);
+        logger.error('Download error:', error);
         sendResponse({ success: false, error: error.message });
       }
     })();
@@ -78,4 +81,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // Log service worker activation
-console.log('[Kibana as Code] Background service worker started');
+logger.log('Background service worker started');

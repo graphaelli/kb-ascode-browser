@@ -209,7 +209,7 @@ async function handleDownload(index, button) {
       throw new Error(response.error || 'Export failed');
     }
   } catch (error) {
-    console.error('[Kibana as Code] Export error:', error);
+    logger.error('Export error:', error);
     
     button.classList.remove('downloading');
     button.classList.add('error');
@@ -270,7 +270,7 @@ async function scanForResources() {
       showState('no-resources');
     }
   } catch (error) {
-    console.warn('[Kibana as Code] Error scanning for resources:', error);
+    logger.warn('Error scanning for resources:', error);
     showState('no-resources');
   }
 }

@@ -4,6 +4,20 @@
 let currentSavedObject = null;
 let currentTabId = null;
 
+// Initialize debug toggle
+async function initDebugToggle() {
+  const debugToggle = document.getElementById('debug-mode-toggle');
+  
+  // Load current setting
+  const result = await chrome.storage.local.get('debugModeEnabled');
+  debugToggle.checked = result.debugModeEnabled || false;
+  
+  // Listen for changes
+  debugToggle.addEventListener('change', async (e) => {
+    await logger.setDebugEnabled(e.target.checked);
+  });
+}
+
 // DOM elements
 const states = {
   loading: document.getElementById('loading'),
@@ -95,7 +109,7 @@ async function getSavedObjectInfo() {
       showState('notDetected');
     }
   } catch (error) {
-    // console.error('[Kibana as Code] Error detecting resource:', error);
+    logger.error('Error detecting resource:', error);
     showState('notDetected');
   }
 }
@@ -149,7 +163,7 @@ async function exportSavedObject() {
       showState('error');
     }
   } catch (error) {
-    console.error('Export error:', error);
+    logger.error('Export error:', error);
     elements.errorMessage.textContent = error.message || 'Failed to export resource';
     showState('error');
   }
@@ -172,7 +186,7 @@ async function openSidePanel() {
     // Close the popup
     window.close();
   } catch (error) {
-    console.warn('[Kibana as Code] Error opening side panel:', error);
+    logger.warn('Error opening side panel:', error);
   }
 }
 
@@ -184,5 +198,6 @@ elements.ndExploreBtn.addEventListener('click', openSidePanel);
 elements.retryBtn.addEventListener('click', retryExport);
 
 // Initialize popup
+initDebugToggle();
 showState('loading');
 getSavedObjectInfo();

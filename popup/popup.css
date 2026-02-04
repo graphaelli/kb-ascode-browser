@@ -212,7 +212,13 @@ footer {
   margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid #d3dae6;
-  text-align: center;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 
 footer a {
@@ -228,6 +234,30 @@ footer a:hover {
 .footer-text {
   font-size: 12px;
   color: #69707d;
+}
+
+/* Debug toggle */
+.debug-toggle {
+  flex-shrink: 0;
+}
+
+.debug-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  color: #69707d;
+}
+
+.debug-toggle input[type="checkbox"] {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+}
+
+.toggle-label {
+  user-select: none;
 }
 
 /* Center text in states */
