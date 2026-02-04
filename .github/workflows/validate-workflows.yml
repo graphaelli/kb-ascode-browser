@@ -24,7 +24,7 @@ jobs:
         run: |
           echo "Validating YAML syntax for all workflow files..."
           yamllint -d '{extends: relaxed, rules: {line-length: {max: 200}}}' .github/workflows/
-          
+
       - name: Validate with actionlint
         uses: reviewdog/action-actionlint@v1
         with:
