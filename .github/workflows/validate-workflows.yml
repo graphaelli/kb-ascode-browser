@@ -1,0 +1,32 @@
+name: Validate Workflows
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Validate workflow YAML syntax
+        run: |
+          echo "Validating YAML syntax for all workflow files..."
+          yamllint -d '{extends: relaxed, rules: {line-length: {max: 200}}}' .github/workflows/
+
+      - name: Validate with actionlint
+        uses: reviewdog/action-actionlint@v1
+        with:
+          fail_on_error: true
+          filter_mode: nofilter

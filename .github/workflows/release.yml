@@ -11,18 +11,18 @@ permissions:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
-      
+
       - name: Get version from tag
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-      
+
       - name: Verify manifest version
         run: |
           MANIFEST_VERSION=$(jq -r '.version' manifest.json)
@@ -32,7 +32,7 @@ jobs:
           if [ "$MANIFEST_VERSION" != "$TAG_VERSION" ]; then
             echo "::warning::Manifest version ($MANIFEST_VERSION) does not match tag version ($TAG_VERSION)"
           fi
-      
+
       - name: Create extension package
         run: |
           mkdir -p dist
@@ -44,33 +44,33 @@ jobs:
             sidepanel/ \
             README.MD \
             -x "*.git*" "*.DS_Store"
-          
+
           echo "Package created:"
           ls -lh dist/
-      
+
       - name: Generate changelog
         id: changelog
         run: |
           # Get the previous tag
           PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${GITHUB_REF#refs/tags/}$" | head -n 1)
-          
+
           if [ -z "$PREV_TAG" ]; then
             echo "No previous tag found, using initial commit"
             PREV_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
-          
+
           echo "Generating changelog from $PREV_TAG to ${GITHUB_REF#refs/tags/}"
-          
+
           # Generate changelog
           CHANGELOG=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
-          
+
           if [ -z "$CHANGELOG" ]; then
             CHANGELOG="- Initial release"
           fi
-          
+
           # Save to file for multi-line output
           echo "$CHANGELOG" > changelog.txt
-      
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -81,7 +81,7 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
