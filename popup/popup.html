@@ -103,10 +103,19 @@
     </main>
 
     <footer>
-      <span class="footer-text">Export Kibana resources as code</span>
+      <div class="footer-content">
+        <span class="footer-text">Export Kibana resources as code</span>
+        <div class="debug-toggle">
+          <label for="debug-mode-toggle" title="Enable debug logging in browser console">
+            <input type="checkbox" id="debug-mode-toggle">
+            <span class="toggle-label">Debug Mode</span>
+          </label>
+        </div>
+      </div>
     </footer>
   </div>
 
+  <script src="../shared/logger.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

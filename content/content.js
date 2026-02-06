@@ -10,6 +10,52 @@ if (window.__kibanaExporterLoaded) {
 
 function initKibanaExporter() {
 
+// Create logger for content script
+const logger = {
+  _debugEnabled: false,
+  _initialized: false,
+  
+  async init() {
+    if (this._initialized) return;
+    try {
+      const result = await chrome.storage.local.get('debugModeEnabled');
+      this._debugEnabled = result.debugModeEnabled || false;
+      this._initialized = true;
+      
+      // Listen for changes
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local' && changes.debugModeEnabled) {
+          this._debugEnabled = changes.debugModeEnabled.newValue || false;
+        }
+      });
+    } catch (error) {
+      this._debugEnabled = false;
+      this._initialized = true;
+    }
+  },
+  
+  log(...args) {
+    if (this._debugEnabled) {
+      console.log('[Kibana as Code]', ...args);
+    }
+  },
+  
+  warn(...args) {
+    if (this._debugEnabled) {
+      console.warn('[Kibana as Code]', ...args);
+    }
+  },
+  
+  error(...args) {
+    if (this._debugEnabled) {
+      console.error('[Kibana as Code]', ...args);
+    }
+  }
+};
+
+// Initialize logger immediately
+logger.init();
+
 /**
  * URL patterns for different Kibana saved object types
  * IDs can be UUIDs or custom strings - capture until query params or end
@@ -574,7 +620,7 @@ function extractPanelInfo(panel) {
   }
   
   // Debug logging
-  console.log('[Kibana as Code] Panel detection:', { title, id, type, panelElement: panel });
+  logger.log('Panel detection:', { title, id, type, panelElement: panel });
   
   // If we found at least a title, return the panel info
   if (title || id) {
@@ -608,7 +654,7 @@ async function getAllResources() {
       const panels = await getEmbeddedPanelsFromAPI(mainResource.id);
       resources.push(...panels);
     } catch (error) {
-      console.warn('[Kibana as Code] Error fetching embedded panels:', error);
+      logger.warn('Error fetching embedded panels:', error);
       // Fallback to DOM detection
       const domPanels = detectEmbeddedPanels();
       resources.push(...domPanels);
@@ -781,7 +827,7 @@ function highlightPanel(panelIndex, resourceIndex) {
   }
   
   if (panelElements.length === 0) {
-    console.log('[Kibana as Code] No panel elements found');
+    logger.log('No panel elements found');
     return;
   }
   
@@ -883,7 +929,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           // Additional resources = total - 1 (the main dashboard)
           additionalResourceCount = Math.max(0, resources.length - 1);
         } catch (e) {
-          console.warn('[Kibana as Code] Error getting resource count:', e);
+          logger.warn('Error getting resource count:', e);
         }
       }
       
@@ -903,7 +949,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const resources = await getAllResources();
         sendResponse({ resources });
       } catch (error) {
-        console.warn('[Kibana as Code] Error getting all resources:', error);
+        logger.warn('Error getting all resources:', error);
         sendResponse({ resources: [] });
       }
     })();
@@ -943,7 +989,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         
         sendResponse(downloadResponse);
       } catch (error) {
-        console.error('[Kibana as Code] Export error:', error);
+        logger.error('Export error:', error);
         sendResponse({ success: false, error: error.message });
       }
     })();
@@ -955,10 +1001,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // Log detection on page load for debugging
-console.log('[Kibana as Code] Content script loaded');
+logger.log('Content script loaded');
 const detected = detectSavedObject();
 if (detected) {
-  console.log('[Kibana as Code] Detected resource:', detected);
+  logger.log('Detected resource:', detected);
 }
 
 } // end initKibanaExporter
